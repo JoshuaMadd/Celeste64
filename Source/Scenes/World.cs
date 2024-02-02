@@ -85,6 +85,11 @@ public class World : Scene
 				Get<Player>()?.Kill();
 			}));
 			pauseMenu.Add(new Menu.Spacer());
+			
+			Menu optionsMenu = new Menu();
+			optionsMenu.Add(new Menu.Toggle("Fullscreen", Save.Instance.ToggleFullscreen, () => Save.Instance.Fullscreen));
+			pauseMenu.Add(new Menu.Submenu("Options", pauseMenu, optionsMenu));
+			
 			pauseMenu.Add(new Menu.Toggle("Fullscreen", Save.Instance.ToggleFullscreen, () => Save.Instance.Fullscreen));
 			pauseMenu.Add(new Menu.Toggle("Z-Guide", Save.Instance.ToggleZGuide, () => Save.Instance.ZGuide));
 			pauseMenu.Add(new Menu.Toggle("Timer", Save.Instance.ToggleTimer, () => Save.Instance.SpeedrunTimer));
@@ -368,8 +373,9 @@ public class World : Scene
 		// unpause
 		else
 		{
-			if (Controls.Pause.Pressed || Controls.Cancel.Pressed)
+			if (Controls.Pause.Pressed || Controls.Cancel.Pressed && pauseMenu.isInMainMenu())
 			{
+				pauseMenu.closeSubmenus();
 				SetPaused(false);
 				Audio.Play(Sfx.ui_unpause);
 			}

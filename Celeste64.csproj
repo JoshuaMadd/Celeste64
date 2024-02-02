@@ -11,6 +11,9 @@
     <PublishSingleFile>true</PublishSingleFile>
     <PublishTrimmed>true</PublishTrimmed>
     <SelfContained>true</SelfContained>
+	      <LangVersion>preview</LangVersion>
+<LangVersion>preview</LangVersion>    
+    
   </PropertyGroup>
 
   <ItemGroup>
