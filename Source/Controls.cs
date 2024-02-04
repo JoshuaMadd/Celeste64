@@ -50,7 +50,7 @@ public static class Controls
 		
 		Cancel.Clear();
 		Cancel.Add(0, Buttons.B);
-		Cancel.Add(0, Keys.X);
+		Cancel.Add(0, Keys.X, Keys.Escape);
 		
 		Pause.Clear();
 		Pause.Add(0, Buttons.Start, Buttons.Select, Buttons.Back);
