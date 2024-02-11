@@ -1,3 +1,4 @@
+using System.Diagnostics;
 
 namespace Celeste64;
 
@@ -12,9 +13,11 @@ public static class Controls
 	public static readonly VirtualButton Confirm = new("Confirm");
 	public static readonly VirtualButton Cancel = new("Cancel");
 	public static readonly VirtualButton Pause = new("Pause");
+	public static ControlsConfig Config = ControlsConfig.Defaults;
 
 	public static void Load(ControlsConfig? config = null)
 	{
+		Config = config;
 		static ControlsConfig.Stick FindStick(ControlsConfig? config, string name)
 		{
 			if (config != null && config.Sticks.TryGetValue(name, out var stick))
@@ -91,33 +94,83 @@ public static class Controls
 		_ => "Xbox Series",
 	};
 
-	private static string GetPromptLocation(string name)
+	private static List<string> GetPromptLocations(VirtualButton button)
+	{
+		List<string> locations = [];
+		var gamepad = Input.Controllers[0];
+		var deviceTypeName =
+			gamepad.Connected ? GetControllerName(gamepad.Gamepad) : "PC";
+		foreach (var binding in Config.Actions[button.Name])
+		{
+			string promptDeviceTypeName = "PC";
+			var name = binding.GetBindingName();
+			if (binding.IsForController())
+				promptDeviceTypeName = GetControllerName(gamepad.Gamepad);
+
+			if (!prompts.TryGetValue(deviceTypeName, out var list))
+				prompts[deviceTypeName] = list = [];
+
+			if (!list.TryGetValue(name, out var lookup))
+				list[name] = lookup = $"Controls/{promptDeviceTypeName}/{name}";
+
+			if(Gamepads.Nintendo.Equals(binding.NotFor) || !Gamepads.Nintendo.Equals(binding.OnlyFor) || (binding.NotFor == null && binding.OnlyFor == null)) //only non switch prompts atm
+				locations.Add(lookup);
+
+		}
+
+		return locations;
+	}
+
+	private static string GetPromptLocation(VirtualButton button)
 	{
 		var gamepad = Input.Controllers[0];
-		var deviceTypeName = 
+		var deviceTypeName =
 			gamepad.Connected ? GetControllerName(gamepad.Gamepad) : "PC";
+		string name = GetFirstBinding(button).GetBindingName();
 
 		if (!prompts.TryGetValue(deviceTypeName, out var list))
 			prompts[deviceTypeName] = list = [];
 
 		if (!list.TryGetValue(name, out var lookup))
 			list[name] = lookup = $"Controls/{deviceTypeName}/{name}";
-					
+
 		return lookup;
 	}
 
-	public static string GetPromptLocation(VirtualButton button)
+	private static ControlsConfig.Binding? GetFirstBinding(VirtualButton button)
 	{
-		// TODO: instead, query the button's actual bindings and look up a
-		// texture based on that! no time tho
-		if (button == Confirm)
-			return GetPromptLocation("confirm");
-		else
-			return GetPromptLocation("cancel");
+		ControlsConfig.Binding? binding = null;
+		var gamepad = Input.Controllers[0];
+		int i = 0;
+		while (gamepad.Connected && binding == null && i < Config.Actions[button.Name].Count)
+		{
+			var b = Config.Actions[button.Name][i];
+			if(b.IsForController())
+				binding = b;
+			i++;
+		}
+		i = 0;
+		while (!gamepad.Connected && binding == null && i < Config.Actions[button.Name].Count)
+		{
+			var b = Config.Actions[button.Name][i];
+			if(!b.IsForController())
+				binding = b;
+			i++;
+		}
+		return binding;
 	}
+
 
 	public static Subtexture GetPrompt(VirtualButton button)
 	{
 		return Assets.Subtextures.GetValueOrDefault(GetPromptLocation(button));
+	}
+
+	public static List<Subtexture> GetPrompts(VirtualButton button)
+	{
+		List<Subtexture> subtextures = [];
+		foreach (var location in GetPromptLocations(button))
+			subtextures.Add(Assets.Subtextures.GetValueOrDefault(location));
+		return subtextures;
 	}
 }

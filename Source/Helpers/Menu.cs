@@ -15,7 +15,22 @@ public class Menu
 		public virtual void Slide(int dir) {}
 	}
 
-	public class Submenu(string label, Menu? rootMenu, Menu? submenu = null) : Item 
+	public class InputOption(string label, VirtualButton button) : Item
+	{
+		public override string Label { get; } = label;
+		public readonly VirtualButton Button = button;
+		public override bool Pressed()
+		{
+			return false;
+		}
+
+		public List<Subtexture> GetTextures()
+		{
+			return Controls.GetPrompts(button);
+		}
+	}
+
+	public class Submenu(string label, Menu? rootMenu, Menu? submenu = null) : Item
 	{
 		private readonly string label = label;
 		public override string Label => label;
@@ -200,7 +215,6 @@ public class Menu
 		{
 			var was = Index;
 			var step = 0;
-
 			if (Controls.Menu.Vertical.Positive.Pressed)
 				step = 1;
 			if (Controls.Menu.Vertical.Negative.Pressed)
@@ -263,6 +277,7 @@ public class Menu
 	
 		for (int i = 0; i < items.Count; i ++)
 		{
+			position.X = 0;
 			if (string.IsNullOrEmpty(items[i].Label))
 			{
 				position.Y += SpacerHeight;
@@ -272,8 +287,28 @@ public class Menu
 			var text = items[i].Label;
 			var justify = new Vec2(0.5f, 0);
 			var color = Index == i && Focused ? (Time.BetweenInterval(0.1f) ? 0x84FF54 : 0xFCFF59) : Color.White;
-			
-			UI.Text(batch, text, position, justify, color);
+
+			if (items[i].GetType() == typeof(InputOption))
+			{
+				UI.Text(batch, text, position, new Vec2(1.0f, 0), color);
+
+				InputOption item = (InputOption) items[i];
+				var textures = item.GetTextures();
+				foreach (var texture in textures)
+				{
+					batch.PushMatrix(
+						Matrix3x2.CreateScale(TitleScale) *
+						Matrix3x2.CreateTranslation(position));
+					position.X += (24 * Game.RelativeScale);
+					UI.Icon(batch, texture, "", Vec2.Zero);
+					batch.PopMatrix();
+				}
+				position.Y += Spacing;
+			}
+			else
+			{
+				UI.Text(batch, text, position, justify, color);
+			}
 	
 			position.Y += font.LineHeight;
 			position.Y += Spacing;    
